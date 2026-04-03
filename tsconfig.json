@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"rootDir": "./src",
+
+		"types": ["node"],
+
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+
+		"verbatimModuleSyntax": true,
+
+		"experimentalDecorators": false,
+		"emitDecoratorMetadata": false,
+	},
+	"include": ["src"],
+
+}
