@@ -1,6 +1,7 @@
 {
 	"name": "owlbrain-core",
 	"version": "0.1.0",
+	"documentation": "docs/",
 	"type": "module",
 	"engines": {
 		"node": ">=24"
@@ -19,9 +20,13 @@
 		"url": "https://github.com/armaell/owlbrain-core.git"
 	},
 	"homepage": "https://github.com/armaell/owlbrain-core#readme",
-	"keywords": ["owlbrain", "typescript"],
+	"keywords": [
+		"owlbrain",
+		"typescript"
+	],
 	"files": [
-		"dist"
+		"dist",
+		"docs"
 	],
 	"exports": {
 		".": {

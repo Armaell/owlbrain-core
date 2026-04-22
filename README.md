@@ -9,15 +9,13 @@ OwlBrain is built for the other half of automation — the part where things get
 - **Full code** — for real logic, branching, composition, and reuse.
 - **Automation stays maintainable** — no visual spaghetti, no YAML nesting hell, no flow‑chart bloat.
 
-### How to start
-This document is for contributors who want to build **integrations** or contribute directly to the **core**. It explains the architecture you will interact with.
-
+## How to start
 If you wish to simply start using OwlBrain you can :
-- check the [owlbrain-start](https://github.com/Armaell/owlbrain-starter) package for more suitable documentation and quick stater project.
-- Check usage examples in the `examples/` folder and run them with `npm run example <example-name>`
+- checkout the [owlbrain-starter](https://github.com/Armaell/owlbrain-starter) package
+- Take a loot at usage examples in the `examples/` folder and run them with `npm run example <example-name>`
 
-#### Examples list
-##### Features Highlight
+## Examples list
+### Features Highlight
 These examples highlight one particular feature per example file:
 - **[basic](./examples/features/basic/index.ts)** — Minimal example
 - **[load-by-path](./examples/features/load-by-path/index.ts)** — Make the Core autoload scripts files
@@ -29,13 +27,24 @@ These examples highlight one particular feature per example file:
 - **[schedule](./examples/features/schedule/index.ts)** — Emit events on scheduled time
 - **[advanced-event-filtering](./examples/features/advanced-event-filtering/index.ts)** — Use more complex rules to filter events
 
-##### Full Practical
+### Full Practical
 More complexes examples trying to simulate more realistic use-cases:
 - **[restocker](./examples/practical/restocker/index.ts)** —Automated inventory system detecting low stock, and triggering restocking.
 - **[sensors](./examples/practical/sensors/index.ts)** — Listen to sensors readings, and trigger alerts on sustained high temperatures.
 
+## List of provided decorators
+### Script
+- **[@Script](./docs/decorators/scripts/script.md)** — Base script decorator
+### Events
+- **[@OnEvent](./docs/decorators/events/on-event.md)** — React to an event by name or a condition
+- **[Lifecycle: @OnInit(), @OnStart(), @OnStop()](./docs/decorators/events/lifecycle.md)** — React to an event by name or a condition
+- **[@Schedule](./docs//decorators/events/schedule.md)** — Trigger events at specific time
+### Utility
+- **[@Inject](./docs/decorators/utility/inject.md)** — Enable simple cross scripts call
+- **[@OnlyIf](./docs/decorators/utility/only-if.md)** — Add further restriction on a event
+- **[@Delay](./docs/decorators/utility/delay.md)** — Postpone the call to a triggered handle
 
-## Overview
+## Main concepts
 owlbrain‑core provides a framework for a script‑driven automations:
 
 - **Scripts** are user-defined javascript classes to build their logic that reacts to events.
@@ -43,7 +52,123 @@ owlbrain‑core provides a framework for a script‑driven automations:
 - An **event bus** centralizing events emitted by integrations and a **consumer** calling the event decorated methods when their conditions matches.
 - **Event decorators** registered to the **consumer** and declaring which events their decorated method will be called upon
 
-## Core concepts
+### The scripts
+Scripts are the smallest unit of behavior.
+They are simple TypeScript classes that react to events, perform work, and orchestrate integrations.
+
+A script is:
+- Instantiated by the runtime
+- Activated by event decorators that declare what the script reacts to
+- Isolated and modular, making it easy to reason about and test
+
+If you checked-out the [owlbrain-starter](https://github.com/Armaell/owlbrain-starter) package you can find a default example in the `scripts/` folder:
+```ts
+import { Script, OnStart, OwlEvent } from "owlbrain-core";
+
+@Script()
+export class HelloWorld {
+  @OnStart()
+  async onStart(event: OwlEvent) {
+    console.log("Hello world!");
+  }
+}
+```
+Scripts are long-lived, you can use it to hold state and information through events.
+```ts
+let count = 0
+@OnEvent("motion.bedroom")
+async onMotion(event: OwlEvent) {
+  this.count++
+  console.log("Bedroom motion count:", this.count)
+}
+```
+Of course those state are not kept between restarts unless you ensure it yourself.
+### The Event decorator
+Event decorators are how scripts declare what they react to. They allow to easily react to events without having to bother with subscriptions. Everything comes pre-wired.
+
+```ts
+import { Script, OnEvent, OnStart, Logger } from "owlbrain-core"
+import type { OwlEvent } from "owlbrain-core"
+
+@Script()
+class BedroomMorning {
+    @OnEvent("time.07:00")
+    async onMorning(event: OwlEvent) {
+        // Turning light one gently to wake the occupant
+    }
+
+    @OnEvent("motion.bedroom")
+    async onEarlyWake(event: OwlEvent) {
+        // occupant woke-up early, opening the blinds
+    }
+}
+```
+This example is purely conceptual ; actual events will be provided by new event decorators from integrations. owlbrain-core by itself is actually a little bland.
+
+### OwlEvent
+All event decorators will pass along an event object, the OwlEvent is its most basic form.
+
+It contains :
+- **name**—the event identifier, can be any string
+- **namespace**—an optional grouping that is generally the integration name origin. It prevent name collision
+
+More specialized event type provided by integrations will contains more information.
+
+
+### List the available decorators
+Two methods :
+
+You can either look at the [core](https://github.com/Armaell/owlbrain-core) or each integration documentation.
+
+Or use the [ui](https://github.com/Armaell/owlbrain-ui) integration which launch a webpage compiling the documentation of all packages.\
+The ui integration is defined by default in this starter package
+
+### Integrations
+Integrations are how OwlBrain connects to the outside world. They provide new event sources, new decorators, and optional services your scripts can use. Each integration plugs into the core at startup and extends what your automations can react to.
+
+### Official integrations
+
+- **[owlbrain-http](https://github.com/Armaell/owlbrain-http)** —  Allow to listen to http calls on your application
+- **[owlbrain-homeassistant](https://github.com/Armaell/owlbrain-homeassistant)** —  Connect to Home Assistant
+- **[owlbrain-ui](https://github.com/Armaell/owlbrain-ui)** —  Start a web application allowing to inspect scripts status and read a customized documentation of your app
+
+### Enable an integration
+Install it using npm or your preferred package manager.
+```ts
+import { OwlBrain } from "owlbrain-core";
+import { HttpIntegration } from "owlbrain-http";
+
+await OwlBrain.withIntegration(HttpIntegration({...})).run()
+```
+You can now use the event decorators provided by the integration.
+
+By example with home assistant:
+```ts
+@EntityScript({ entity_id: "motion.bedroom" })
+class LightAutomation {
+  const dressingLight = lightEntity("light.dressing")
+
+  @OnStateChange({ to: "on" })
+  async onMotion(event: OwlEvent) {
+    await this.dressingLight.turnOn()
+  }
+}
+```
+
+### Avoiding conflicts
+Each integration has a **unique namespace**. While this is used to prevent mixing event name between two integrations, this an also be used two have multiple time the same integration.
+
+By example if you want to open HTTP endpoints on multiple ports :
+```ts
+await OwlBrain
+  .withIntegration(HttpIntegration({port: 80}, name: "http"))
+  .withIntegration(HttpIntegration({port: 443}, name: "https"))
+  .run()
+```
+Event will then be prefixed by the relevant namespace depending on their origin
+
+## In Depth
+The next sections are not necessary to use OwlBrain, but are useful for contributing to the core or writing integrations.
 ### Scripts
 Scripts are user‑defined classes decorated with `@Script()` or another extended script decorator provided by an integration.\
 They are discovered by the core at file import, and the core accept a path to the files to load.
@@ -63,7 +188,7 @@ Each integration must define a unique name which can be used to namespace the ev
 
 ### Event Decorators
 
-Method decorated by event decorators will be called by the event bus.
+Method decorated by event decorators will be called by the event bus consumer.
 
 The decorator register the method to the event bus and set rules as to which event will trigger the method.
 
