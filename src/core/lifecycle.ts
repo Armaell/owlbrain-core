@@ -27,8 +27,11 @@ export class LifecycleMachine {
 	private currentState = LifecycleState.Init
 	private components: LifecycleHooks[] = []
 	private readonly transitions: Record<LifecycleState, LifecycleState[]> = {
-		[LifecycleState.Init]: [LifecycleState.Starting],
-		[LifecycleState.Starting]: [LifecycleState.Started],
+		[LifecycleState.Init]: [LifecycleState.Starting, LifecycleState.Stopping],
+		[LifecycleState.Starting]: [
+			LifecycleState.Started,
+			LifecycleState.Stopping
+		],
 		[LifecycleState.Started]: [LifecycleState.Stopping],
 		[LifecycleState.Stopping]: [LifecycleState.Stopped],
 		[LifecycleState.Stopped]: []

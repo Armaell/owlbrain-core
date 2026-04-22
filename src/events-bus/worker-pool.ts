@@ -2,7 +2,6 @@ import type { LifecycleMachine } from "../core/lifecycle"
 import { LifecycleState } from "../core/lifecycle"
 import { Logger } from "../logging/logger"
 import type { EventTask } from "./consumer"
-import type { OwlEvent } from "./events-bus"
 import type { KeyLockedQueue } from "./key-locked-queue"
 
 /**

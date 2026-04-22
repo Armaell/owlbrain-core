@@ -2,7 +2,7 @@ import type { OwlEvent } from "../events-bus/events-bus"
 import { buildEventDecorator } from "./builders/event"
 
 export const OnInit = buildEventDecorator(
-	(method: (event: OwlEvent) => Promise<void>, scriptData: unknown) => {
+	(method: (event: OwlEvent) => Promise<void>) => {
 		return {
 			method,
 			eventNamespace: "core.lifecycle",
@@ -12,7 +12,7 @@ export const OnInit = buildEventDecorator(
 )
 
 export const OnStart = buildEventDecorator(
-	(method: (event: OwlEvent) => Promise<void>, scriptData: unknown) => {
+	(method: (event: OwlEvent) => Promise<void>) => {
 		return {
 			method,
 			eventNamespace: "core.lifecycle",
@@ -22,7 +22,7 @@ export const OnStart = buildEventDecorator(
 )
 
 export const OnStop = buildEventDecorator(
-	(method: (event: OwlEvent) => Promise<void>, scriptData: unknown) => {
+	(method: (event: OwlEvent) => Promise<void>) => {
 		return {
 			method,
 			eventNamespace: "core.lifecycle",

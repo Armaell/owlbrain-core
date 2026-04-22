@@ -54,7 +54,7 @@ export class EventBusConsumer {
 	register<TEvent extends OwlEvent = OwlEvent>(
 		consumer: EventsConsumer<TEvent>
 	) {
-		this.registry.register(consumer)
+		this.registry.register(consumer as any)
 	}
 
 	/**
@@ -75,7 +75,7 @@ export class EventBusConsumer {
 
 	private onNewEvent<TEvent extends OwlEvent = OwlEvent>(event: TEvent) {
 		const consumers = this.registry.match(event)
-		consumers.forEach((consumer) => {
+		consumers.forEach((consumer: any) => {
 			this.queue.enqueue({ event, consumer }, consumer.concurrencyKey)
 			this.pool.wakeWorker()
 		})

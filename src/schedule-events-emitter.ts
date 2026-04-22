@@ -39,7 +39,7 @@ export class ScheduleEventsEmitter implements LifecycleHooks {
 	private refreshEmittedEvents() {
 		if (this.lifecycle.state !== LifecycleState.Started) return
 		this.timer?.clear()
-		this.timer = later.setInterval(() => this.emit(), this.fullSchedule)
+		this.timer = later.setInterval(() => void this.emit(), this.fullSchedule)
 	}
 
 	private async emit() {

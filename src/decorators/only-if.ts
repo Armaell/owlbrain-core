@@ -15,7 +15,7 @@
 export function OnlyIf<
 	Value extends (this: any, event: any, ...args: any[]) => any
 >(predicate: (event: Parameters<Value>[0], self: any) => boolean) {
-	return function (value: Value, context: ClassMethodDecoratorContext) {
+	return function (value: Value) {
 		return function wrapped(
 			this: any,
 			event: Parameters<Value>[0],
