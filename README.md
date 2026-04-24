@@ -130,6 +130,7 @@ Integrations are how OwlBrain connects to the outside world. They provide new ev
 
 - **[owlbrain-http](https://github.com/Armaell/owlbrain-http)** —  Allow to listen to http calls on your application
 - **[owlbrain-homeassistant](https://github.com/Armaell/owlbrain-homeassistant)** —  Connect to Home Assistant
+- **[owlbrain-mqtt](https://github.com/Armaell/owlbrain-mqtt)** —  Listen and publish messages to a MQTT server
 - **[owlbrain-ui](https://github.com/Armaell/owlbrain-ui)** —  Start a web application allowing to inspect scripts status and read a customized documentation of your app
 
 ### Enable an integration
