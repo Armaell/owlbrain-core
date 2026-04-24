@@ -9,14 +9,15 @@ import type {
 	EventDecoratorMeta
 } from "../decorators/builders/event"
 import type {
-	ScriptClass,
 	ScriptData,
 	ScriptDecoratorMeta
 } from "../decorators/builders/script"
 import { container } from "../di/container"
 
-type BuildingScript = {
-	ScriptClass: Function
+export type ScriptClassConstructor<SC = any> = new (...args: any[]) => SC
+
+type BuildingScript<SCC extends ScriptClassConstructor> = {
+	ScriptClass: ScriptClassConstructor
 	/**
 	 * Unique symbol per Script instance, will be used by {@link EventBusConsumer} and {@link KeyLockedQueue} to ensure a script only run one method concurrently
 	 */
@@ -24,28 +25,35 @@ type BuildingScript = {
 	/**
 	 * Instantiated Script
 	 */
-	instance: any
+	instance: InstanceType<SCC>
 	/**
 	 * What's needed to instantiate the script
 	 */
-	scriptMeta: ScriptDecoratorMeta<any, any>
+	scriptMeta: ScriptDecoratorMeta<SCC, any>
 	/**
 	 * Data returned by the {@link buildScriptDecorator}'s builder function
 	 */
 	scriptData: ScriptData
 }
 
-type BuildingEventHandler = {
-	ScriptClass: Function
+type BuildingEventHandler<SCC extends ScriptClassConstructor> = {
+	ScriptClass: ScriptClassConstructor
 	/**
 	 * Unique symbol per Script instance, will be used by {@link EventBusConsumer} and {@link KeyLockedQueue} to ensure a script only run one method concurrently
 	 */
-	key: BuildingScript["key"]
+	key: BuildingScript<SCC>["key"]
 	methodImpl: any
 	/**
 	 * Data used by the {@link EventBusConsumer}
 	 */
 	consumerData: BuilderFnReturn<any, any>
+}
+
+export type ScriptInstances<
+	SCC extends ScriptClassConstructor = ScriptClassConstructor
+> = {
+	name: string
+	instances: InstanceType<SCC>[]
 }
 
 /**
@@ -57,14 +65,20 @@ export class ScriptFactory {
 
 	constructor(
 		private lifecycle: LifecycleMachine,
-		private consumer: EventBusConsumer<OwlEvent>
+		private consumer: EventBusConsumer
 	) {}
 
 	/**
 	 * Builds all pending scripts discovered by decorators
 	 */
-	public async buildPendingScripts() {
-		const allInstances: BuildingScript[] = []
+	public async buildPendingScripts(): Promise<
+		Map<ScriptClassConstructor, ScriptInstances>
+	> {
+		const allInstancesGrouped = new Map<
+			ScriptClassConstructor,
+			ScriptInstances
+		>()
+		const allInstances: BuildingScript<any>[] = []
 		const allEventHandlers = []
 
 		for (const [
@@ -75,6 +89,10 @@ export class ScriptFactory {
 			this.logger.debug(
 				`Register ${scriptsCount} instance${scriptsCount > 1 ? "s" : ""} of ${ScriptClass.name}`
 			)
+			allInstancesGrouped.set(ScriptClass, {
+				name: ScriptClass.name,
+				instances: []
+			})
 
 			try {
 				const instances = await this.buildScriptInstances(
@@ -89,6 +107,9 @@ export class ScriptFactory {
 
 				allInstances.push(...instances)
 				allEventHandlers.push(...eventHandlers)
+				allInstancesGrouped
+					.get(ScriptClass)!
+					.instances.push(...instances.map((i) => i.instance))
 			} catch (err) {
 				throw new ScriptInstantiationError({
 					name: ScriptClass.name,
@@ -101,26 +122,34 @@ export class ScriptFactory {
 		await this.catchupLifecycleEvents(allEventHandlers)
 		this.registerEventHandlers(allEventHandlers)
 
-		return allInstances.map((i) => i.instance)
+		return allInstancesGrouped
 	}
 
-	private async buildScriptInstances(
-		ScriptClass: Function,
-		scriptMetas: ScriptDecoratorMeta<any, any>[]
-	): Promise<BuildingScript[]> {
+	private async buildScriptInstances<SCC extends ScriptClassConstructor>(
+		ScriptClass: SCC,
+		scriptMetas: ScriptDecoratorMeta<SCC, any>[]
+	): Promise<BuildingScript<SCC>[]> {
 		let i = 1
 		const instances = []
 		for (const scriptMeta of scriptMetas) {
 			const key = Symbol(`script:${scriptMeta.ScriptClass.name}.${i++}`)
 			const builderScriptResponse = await scriptMeta.build(scriptMeta.arg)
+
 			Object.defineProperty(scriptMeta.ScriptClass.prototype, "scriptData", {
 				value: builderScriptResponse.scriptData,
 				writable: false,
 				enumerable: false,
-				configurable: false
+				configurable: true
 			})
 
 			const instance = new scriptMeta.ScriptClass()
+
+			Object.defineProperty(instance, "scriptData", {
+				value: builderScriptResponse.scriptData,
+				writable: false,
+				enumerable: true,
+				configurable: false
+			})
 
 			instances.push({
 				ScriptClass,
@@ -133,11 +162,11 @@ export class ScriptFactory {
 		return instances
 	}
 
-	private async buildEventHandlers(
-		ScriptClass: Function,
-		instances: BuildingScript[],
+	private async buildEventHandlers<SCC extends ScriptClassConstructor>(
+		ScriptClass: ScriptClassConstructor,
+		instances: BuildingScript<SCC>[],
 		eventMetas: EventDecoratorMeta<any>[]
-	): Promise<BuildingEventHandler[]> {
+	): Promise<BuildingEventHandler<SCC>[]> {
 		return Promise.all(
 			instances.flatMap(({ key, instance, scriptMeta, scriptData }) =>
 				eventMetas.map((eventMeta) =>
@@ -155,7 +184,7 @@ export class ScriptFactory {
 	}
 
 	private async buildEventHandler(
-		ScriptClass: Function,
+		ScriptClass: ScriptClassConstructor,
 		key: symbol,
 		instance: any,
 		scriptMeta: ScriptDecoratorMeta<any, any>,
@@ -171,7 +200,7 @@ export class ScriptFactory {
 	 * Registers all event handlers on the event bus consumer.
 	 * Wraps each handler to support onReturnValue hooks.
 	 */
-	private registerEventHandlers(handlers: BuildingEventHandler[]) {
+	private registerEventHandlers(handlers: BuildingEventHandler<any>[]) {
 		for (const h of handlers) {
 			this.consumer.register({
 				namespace: h.consumerData.eventNamespace,
@@ -186,7 +215,7 @@ export class ScriptFactory {
 	/**
 	 * If a script specified a token, register it in the container
 	 */
-	private registerToContainer(instances: BuildingScript[]) {
+	private registerToContainer(instances: BuildingScript<any>[]) {
 		for (const {
 			ScriptClass,
 			scriptData: { injectableAs: token },
@@ -209,7 +238,7 @@ export class ScriptFactory {
 	 * Replays lifecycle events (init, started) that have already occurred,
 	 * ensuring scripts behave as if they were present from the beginning.
 	 */
-	private async catchupLifecycleEvents(handlers: BuildingEventHandler[]) {
+	private async catchupLifecycleEvents(handlers: BuildingEventHandler<any>[]) {
 		const current = this.lifecycle.state
 
 		// We only care about these two lifecycle events

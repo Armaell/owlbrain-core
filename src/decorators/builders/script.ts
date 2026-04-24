@@ -7,6 +7,10 @@ export type ScriptClass<SCRIPT_DATA extends ScriptData> = {
 
 export type ScriptData = {
 	/**
+	 * For user only, to differentiate their scripts instances
+	 */
+	name?: string
+	/**
 	 * If set, will register the script in the container at the given token.\
 	 * You can then retrieve it using :
 	 * ```ts

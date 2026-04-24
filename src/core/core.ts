@@ -69,10 +69,7 @@ export const OwlBrain: BuilderMethods = new Proxy({} as BuilderMethods, {
 })
 
 class OwlBrainBuilder {
-	private static config: OwlBrainConfig = {
-		integrations: [],
-		logLevels: {}
-	}
+	private static config: OwlBrainConfig = {}
 
 	configure(configuration: Partial<OwlBrainConfig>) {
 		if (configuration.integrations)
@@ -89,7 +86,7 @@ class OwlBrainBuilder {
 	 * @throws *IntegrationConflictError* if two integrations share the same namespace
 	 */
 	withIntegration(integration: OwlIntegrationFactory) {
-		OwlBrainBuilder.config.integrations.push(integration)
+		;(OwlBrainBuilder.config.integrations ??= []).push(integration)
 		return this
 	}
 
@@ -99,7 +96,6 @@ class OwlBrainBuilder {
 	 * @throws *IntegrationConflictError* if two integrations share the same namespace
 	 */
 	withIntegrations(...integrations: OwlIntegrationFactory[]) {
-		OwlBrainBuilder.config.integrations.push(...integrations)
 		return integrations.reduce(
 			(that, integration) => that.withIntegration(integration),
 			this
@@ -116,7 +112,7 @@ class OwlBrainBuilder {
 	 * ```
 	 */
 	withLoggerLevel(namespace: string, level: LogLevel) {
-		OwlBrainBuilder.config.logLevels[namespace] = level
+		;(OwlBrainBuilder.config.logLevels ??= {})[namespace] = level
 		return this
 	}
 

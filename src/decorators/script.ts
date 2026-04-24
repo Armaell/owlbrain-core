@@ -2,6 +2,10 @@ import { buildScriptDecorator } from "./builders/script"
 
 type ScriptDecoratorConfig = {
 	/**
+	 * For user only, to differentiate their scripts instances
+	 */
+	name?: string
+	/**
 	 * If set, will register the script in the container at the given token.\
 	 * You can then retrieve it using :
 	 * ```ts

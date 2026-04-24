@@ -2,8 +2,18 @@
 import { bgRed, bold, cyan, dim, green, red, white, yellow } from "colorette"
 import type { LogLevel } from "./log-levels-registry"
 import { LogLevelRegistry } from "./log-levels-registry"
+import { RingBuffer } from "../utils"
+
+export type Log = {
+	date: Date
+	namespace: string[]
+	level: LogLevel
+	text: string
+}
 
 export class Logger {
+	private history = new RingBuffer<Log>(1000)
+
 	constructor(public readonly namespace: string[] = []) {}
 
 	static readonly levels = new LogLevelRegistry()
@@ -28,8 +38,8 @@ export class Logger {
 		return new Logger([...this.namespace, ...namespace])
 	}
 
-	private format(level: LogLevel, message: string) {
-		const ts = new Date().toISOString()
+	private format(date: Date, level: LogLevel, message: string) {
+		const ts = date.toISOString()
 
 		const ns = this.namespace.length ? ` [${this.namespace.join(".")}]` : ""
 
@@ -53,9 +63,18 @@ export class Logger {
 	private write(level: LogLevel, args: unknown[]) {
 		if (!Logger.levels.shouldLog(this.namespace, level)) return
 
+		const date = new Date()
+
 		const text = args.map((arg) => this.formatUnknown(arg)).join(" ")
-		const formatted = this.format(level, text)
+		const formatted = this.format(date, level, text)
 		const colorized = Logger.levelColor[level](formatted)
+
+		this.history.push({
+			date,
+			namespace: this.namespace,
+			level,
+			text
+		})
 
 		Logger.consoleMethod[level](colorized)
 	}
@@ -80,5 +99,9 @@ export class Logger {
 	}
 	fatal(...args: unknown[]) {
 		this.write("FATAL", args)
+	}
+
+	getHistory() {
+		return this.history.toArray()
 	}
 }

@@ -1,6 +1,7 @@
 import type { EventDecoratorMeta } from "../decorators/builders/event"
 import type { ScriptDecoratorMeta } from "../decorators/builders/script"
 import { createGlobalSingleton } from "../utils"
+import type { ScriptClassConstructor } from "./factory"
 
 /**
  * Collects and organizes metadata produced by script and event decorators.
@@ -19,10 +20,10 @@ import { createGlobalSingleton } from "../utils"
  */
 export class MetadataWalker {
 	private eventMetaStack: EventDecoratorMeta<any>[] = []
-	private lastScriptClass?: Function
+	private lastScriptClass?: ScriptClassConstructor
 
 	private scriptsPending = new Map<
-		Function,
+		ScriptClassConstructor,
 		{
 			scriptMeta: ScriptDecoratorMeta<any, any>[]
 			eventMeta: EventDecoratorMeta<any>[]

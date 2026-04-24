@@ -5,6 +5,14 @@ import { container } from "../di/container"
 import type { ScheduleEventsEmitter } from "../schedule-events-emitter"
 import { InvalidScheduleError } from "../errors"
 
+later.date.localTime()
+
+type BreeLaterSchedule = {
+	isValid: (d: Date) => boolean
+	next: (count?: number) => Date | Date[]
+	prev: (count?: number) => Date | Date[]
+}
+
 export const Schedule = {
 	/**
 	 * Schedule a method using natural‑language.
@@ -45,7 +53,9 @@ export const Schedule = {
 
 			scheduler.schedule(parsed)
 
-			const laterSchedule = later.schedule(parsed)
+			const laterSchedule = later.schedule(
+				parsed
+			) as unknown as BreeLaterSchedule
 
 			return {
 				method,
@@ -92,7 +102,9 @@ export const Schedule = {
 
 			scheduler.schedule(parsed)
 
-			const laterSchedule = later.schedule(parsed)
+			const laterSchedule = later.schedule(
+				parsed
+			) as unknown as BreeLaterSchedule
 
 			return {
 				method,

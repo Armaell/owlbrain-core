@@ -9,9 +9,9 @@ export class EventBusFacade {
 		private consumer: EventBusConsumer
 	) {}
 
-	public async emit<
-		TEvent extends EmitOwlEvent<OwlEvent> = EmitOwlEvent<OwlEvent>
-	>(event: TEvent) {
+	public async emit<TEvent extends OwlEvent = OwlEvent>(
+		event: EmitOwlEvent<TEvent>
+	) {
 		await this.eventBus.emit(event)
 	}
 

@@ -6,10 +6,6 @@ import {
 import type { EventBus } from "./events-bus/events-bus"
 import later from "later"
 
-type LaterSchedule = {
-	schedules: Record<string, number[]>[]
-}
-
 interface LaterTimer {
 	clear: () => void
 }
@@ -19,7 +15,11 @@ interface LaterTimer {
  * @Schedule event decorators request the schedules of events they need to be emitted
  */
 export class ScheduleEventsEmitter implements LifecycleHooks {
-	private fullSchedule: LaterSchedule = { schedules: [] }
+	private fullSchedule: later.ScheduleData = {
+		schedules: [],
+		exceptions: [],
+		error: 0
+	}
 	private timer: LaterTimer | undefined
 
 	constructor(
@@ -27,7 +27,7 @@ export class ScheduleEventsEmitter implements LifecycleHooks {
 		private lifecycle: LifecycleMachine
 	) {}
 
-	schedule(schedule: LaterSchedule) {
+	schedule(schedule: later.ScheduleData) {
 		this.fullSchedule.schedules.push(...schedule.schedules)
 		this.refreshEmittedEvents()
 	}
@@ -39,14 +39,14 @@ export class ScheduleEventsEmitter implements LifecycleHooks {
 	private refreshEmittedEvents() {
 		if (this.lifecycle.state !== LifecycleState.Started) return
 		this.timer?.clear()
-		this.timer = later.setInterval(() => this.emit(), this.fullSchedule)
+		this.timer = later.setInterval(() => void this.emit(), this.fullSchedule)
 	}
 
 	private async emit() {
 		const date = new Date()
 		await this.eventBus.emit({
 			namespace: "core.schedule",
-			name: date.toUTCString()
+			name: date.toString()
 		})
 	}
 

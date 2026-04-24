@@ -1,5 +1,9 @@
 export { type OwlIntegrationFactory } from "./integrations/types"
 export { ScriptRegistry } from "./scripts/registry"
+export {
+	type ScriptInstances,
+	type ScriptClassConstructor
+} from "./scripts/factory"
 
 export { EventBusConsumer } from "./events-bus/consumer"
 export { buildEventDecorator } from "./decorators//builders/event"

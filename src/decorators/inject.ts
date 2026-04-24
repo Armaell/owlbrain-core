@@ -5,6 +5,8 @@ import { type InjectionToken, container } from "../di/container"
  *
  * @remarks
  * Async injection, the value may be undefined if it's not yet created or is not found
+ *
+ * @warning In scripts, injected values are not available in constructors, use `OnInit` and `OnStart` decorators
  */
 export function Inject(token: InjectionToken) {
 	return function (value: undefined, context: ClassFieldDecoratorContext) {

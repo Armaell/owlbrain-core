@@ -134,7 +134,7 @@ export class RestrictedIntegrationNameError extends OwlError {
 
 export class InvalidDecoratorPlacementError extends OwlError {
 	public readonly decoratedName: string | symbol
-	public readonly decoratorName: string | symbol
+	public readonly decoratorName: string | symbol | undefined
 	public readonly actualKind: string
 	public readonly expectedKind: string
 	constructor(args: {
@@ -158,7 +158,6 @@ export class InvalidDecoratorPlacementError extends OwlError {
 }
 
 export class InvalidScheduleError extends OwlError {
-	public readonly integrationName: string
 	constructor(args: { text: string; type: "text" | "cron"; cause?: unknown }) {
 		super({
 			message: `The given ${args.type} schedule "${args.text}" is not a valid schedule. Please check later.js documentation at https://breejs.github.io/later/parsers.html#${args.type}`,
