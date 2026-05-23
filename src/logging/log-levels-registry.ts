@@ -1,11 +1,13 @@
 export type LogLevel = "DEBUG" | "VERBOSE" | "INFO" | "WARN" | "ERROR" | "FATAL"
 
+export type LogLevelAndMute = LogLevel | "MUTE"
+
 /**
  * Set the logging level per namespace
  */
 export class LogLevelRegistry {
-	private levels = new Map<string, LogLevel>()
-	private defaultLevel: LogLevel = "INFO"
+	private levels = new Map<string, LogLevelAndMute>()
+	private defaultLevel: LogLevelAndMute = "INFO"
 
 	private static levelsOrder = {
 		DEBUG: 0,
@@ -13,18 +15,19 @@ export class LogLevelRegistry {
 		INFO: 2,
 		WARN: 3,
 		ERROR: 4,
-		FATAL: 5
+		FATAL: 5,
+		MUTE: 99
 	}
 
-	setDefault(level: LogLevel) {
+	setDefault(level: LogLevelAndMute) {
 		this.defaultLevel = level
 	}
 
-	set(namespace: string, level: LogLevel) {
+	set(namespace: string, level: LogLevelAndMute) {
 		this.levels.set(namespace, level)
 	}
 
-	bulkSet(levels: Record<string, LogLevel>) {
+	bulkSet(levels: Record<string, LogLevelAndMute>) {
 		for (const [ns, level] of Object.entries(levels)) {
 			if (ns === "") {
 				this.setDefault(level)
@@ -39,7 +42,7 @@ export class LogLevelRegistry {
 	 * Example: namespaces ["A","D"] → checks:
 	 *   "A.D", "A", "" (default)
 	 */
-	resolve(namespace: string[]): LogLevel {
+	resolve(namespace: string[]): LogLevelAndMute {
 		for (let i = namespace.length; i >= 0; i--) {
 			const key = namespace.slice(0, i).join(".")
 			if (this.levels.has(key)) {
