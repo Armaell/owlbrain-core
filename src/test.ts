@@ -1,1 +1,1 @@
-export { createTestHarness } from "./di/container.test.harness"
+export { createContainerHarness } from "./di/container.test.harness"

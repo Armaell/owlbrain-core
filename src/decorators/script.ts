@@ -20,6 +20,10 @@ type ScriptDecoratorConfig = {
 	injectableAs?: ["script", ...string[]]
 }
 
+/**
+ * The decorated class will be instantiated as owlbrain startup
+ * and all event decorators will be wired to the event bus
+ */
 export const Script = buildScriptDecorator(
 	async (config: ScriptDecoratorConfig = {}) => ({ scriptData: config })
 )

@@ -29,6 +29,6 @@ export class InMemoryEventBus implements EventBus {
 	}
 
 	listen<TEvent extends OwlEvent = OwlEvent>(handler: EventsListener<TEvent>) {
-		this.listeners.push(handler)
+		this.listeners.push(handler as EventsListener<OwlEvent>)
 	}
 }

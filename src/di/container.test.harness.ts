@@ -2,7 +2,7 @@ import { TokenAlreadyExistError, TokenNotFoundError } from "../errors"
 import type { InjectionToken } from "./container"
 import { Container } from "./container"
 
-export function createTestHarness() {
+export function createContainerHarness() {
 	const container = new Container()
 
 	return {
