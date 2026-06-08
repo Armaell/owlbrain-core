@@ -5,7 +5,6 @@ describe("KeyLockedQueue", () => {
 	it("handles locking, skipping, releasing, and replaying correctly with extra items", () => {
 		const q = new KeyLockedQueue<string>()
 
-		// Given A, A, B, C, A, B, C
 		q.enqueue("A1", "A")
 		q.enqueue("A2", "A")
 		q.enqueue("B1", "B")
@@ -14,57 +13,61 @@ describe("KeyLockedQueue", () => {
 		q.enqueue("B2", "B")
 		q.enqueue("C2", "C")
 
-		// next() → returns first A, locks A
+		// returns A1, locks A
 		const first = q.next()
 		expect(first?.item).toBe("A1")
 		expect(first?.key).toBe("A")
 
-		// next() → skips A, returns B (locks B)
+		// skips A, returns B1 (locks B)
 		const second = q.next()
 		expect(second?.item).toBe("B1")
 		expect(second?.key).toBe("B")
 
-		// next() → skips A, skips B, returns C (locks C)
+		// skips A and B, returns C1 (locks C)
 		const third = q.next()
 		expect(third?.item).toBe("C1")
 		expect(third?.key).toBe("C")
 
 		// Release A
-		q.release("A")
+		const releasedCount1 = q.release("A")
+		expect(releasedCount1).toBe(1) // A2 released
 
-		// next() → returns second A
+		// returns A2
 		const fourth = q.next()
 		expect(fourth?.item).toBe("A2")
 		expect(fourth?.key).toBe("A")
 
 		// Release B
-		q.release("B")
+		const releasedCount2 = q.release("B")
+		expect(releasedCount2).toBe(0)
 
-		// next() → returns second B
+		// returns B2
 		const fifth = q.next()
 		expect(fifth?.item).toBe("B2")
 		expect(fifth?.key).toBe("B")
 
 		// Release C
-		q.release("C")
+		const releasedCount3 = q.release("C")
+		expect(releasedCount3).toBe(0)
 
-		// next() → returns second C
+		// returns C2
 		const sixth = q.next()
 		expect(sixth?.item).toBe("C2")
 		expect(sixth?.key).toBe("C")
 
-		// next() → returns third A
+		// A, B and C are all locked, nothing to return
 		const seventh = q.next()
 		expect(seventh).toBeUndefined()
 
-		q.release("A")
+		const releasedCount4 = q.release("A")
+		expect(releasedCount4).toBe(1) // A3 released
 
-		// next() → returns third A
+		// returns A3
 		const eight = q.next()
 		expect(eight?.item).toBe("A3")
 		expect(eight?.key).toBe("A")
 
-		// queue should now be empty
+		// queue is now empty
 		expect(q.next()).toBeUndefined()
 	})
 
@@ -88,5 +91,31 @@ describe("KeyLockedQueue", () => {
 		const third = q.next()
 		expect(third?.item).toBe("Z")
 		expect(third?.key).toBe("Z")
+	})
+
+	it("gives the correct number of released items on key release", () => {
+		const q = new KeyLockedQueue<string>()
+		q.enqueue("A1", "A")
+		q.enqueue("A2", "A")
+		q.enqueue("A3", "A")
+		q.enqueue("B1", "B")
+		q.enqueue("A4", "A")
+		q.enqueue("A5", "A")
+
+		const first = q.next() // returns A1, locks A
+		expect(first?.item).toBe("A1")
+		const second = q.next() // A is locked, skip to B1
+		expect(second?.item).toBe("B1")
+
+		const releasedCount1 = q.release("A")
+		expect(releasedCount1).toBe(2) // A2 and A3 released
+
+		const third = q.next() // returns A2, locks A
+		expect(third?.item).toBe("A2")
+		const fourth = q.next() // A is locked, nothing to return
+		expect(fourth).toBeUndefined()
+
+		const releasedCount2 = q.release("A")
+		expect(releasedCount2).toBe(3) // A3, A4 and A5 released
 	})
 })

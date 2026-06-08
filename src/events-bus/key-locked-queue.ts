@@ -16,39 +16,47 @@ export interface KeyLockedEntry<T> {
  */
 export class KeyLockedQueue<T> {
 	private list = new DoublyLinkedList<KeyLockedEntry<T>>()
-	private locked = new Set<string | symbol>()
-	private skippedCounts = new Map<string | symbol, number>()
+	private lockedKeys = new Set<string | symbol>()
+	private lockedItems = new Map<string | symbol, WeakSet<object>>()
 
 	enqueue(item: T, key?: string | symbol): void {
 		this.list.insertLast({ item, key })
 	}
 
 	next(): KeyLockedEntry<T> | undefined {
-		let node = this.list.head()
+		let item = this.list.head()
 
-		while (node) {
-			const entry = node.getValue()
+		while (item) {
+			const entry = item.getValue()
 			const key = entry.key
 
 			// No key → always consumable
 			if (key === undefined) {
-				this.list.remove(node)
+				this.list.remove(item)
 				return entry
 			}
 
-			// Key not locked → lock it and consume
-			if (!this.locked.has(key)) {
-				this.locked.add(key)
-				this.list.remove(node)
-				this.skippedCounts.delete(key)
+			// Key not locked → lock key and consume item
+			if (!this.lockedKeys.has(key)) {
+				this.lockedKeys.add(key)
+				this.list.remove(item)
+				this.lockedItems.delete(key)
 				return entry
 			}
 
-			// Key locked → count as skipped
+			// Key locked → mark item as locked
 			{
-				this.skippedCounts.set(key, (this.skippedCounts.get(key) ?? 0) + 1)
-				node = node.getNext()
+				let keyLockedItems = this.lockedItems.get(key)
+				if (!keyLockedItems) {
+					keyLockedItems = new WeakSet()
+					this.lockedItems.set(key, keyLockedItems)
+				}
+				if (!keyLockedItems.has(item)) {
+					keyLockedItems.add(item)
+				}
 			}
+
+			item = item.getNext()
 		}
 
 		return undefined
@@ -60,10 +68,10 @@ export class KeyLockedQueue<T> {
 	release(key?: string | symbol): number {
 		if (key === undefined) return 0
 
-		this.locked.delete(key)
+		this.lockedKeys.delete(key)
 
-		const count = this.skippedCounts.get(key) ?? 0
-		this.skippedCounts.delete(key)
+		const count = this.weakSetSize(this.lockedItems.get(key))
+		this.lockedItems.delete(key)
 
 		return count
 	}
@@ -71,17 +79,29 @@ export class KeyLockedQueue<T> {
 	releaseAll(): number {
 		let total = 0
 
-		for (const key of this.locked) {
-			total += this.skippedCounts.get(key) ?? 0
-		}
+		for (const key of this.lockedKeys)
+			total += this.weakSetSize(this.lockedItems.get(key))
 
-		this.locked.clear()
-		this.skippedCounts.clear()
+		this.lockedKeys.clear()
+		this.lockedItems.clear()
 
 		return total
 	}
 
 	isEmpty(): boolean {
 		return this.list.isEmpty()
+	}
+
+	private weakSetSize(set: WeakSet<object> | undefined): number {
+		if (!set) return 0
+
+		let count = 0
+		let node = this.list.head()
+		while (node) {
+			if (set.has(node)) count++
+			node = node.getNext()
+		}
+
+		return count
 	}
 }
