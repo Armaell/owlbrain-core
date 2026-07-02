@@ -89,11 +89,12 @@ export class EventBusConsumer {
 			)
 				return
 
-			const filterMatch = !consumer.eventFilter || consumer.eventFilter(event)
 			const nameMatch = !consumer.eventName || event.name === consumer.eventName
-			if (filterMatch && nameMatch) {
-				await consumer.method(event)
-			}
+			if (!nameMatch) return
+			const filterMatch = !consumer.eventFilter || consumer.eventFilter(event)
+			if (!filterMatch) return
+
+			await consumer.method(event)
 		} catch (err) {
 			this.logger.error(err)
 		} finally {
