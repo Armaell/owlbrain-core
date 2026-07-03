@@ -1,8 +1,12 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import { InvalidDecoratorPlacementError } from "../errors"
+import { metadataWalker } from "../scripts/metadata-walker"
 
 /**
  * Delay function call by {@link timeInMs}
+ *
+ * @warn This force this event handler to be able to be ran concurrently of
+ * this script other event handlers
  */
 export function Delay(timeInMs: number) {
 	return function <T, A extends any[], R>(
@@ -17,6 +21,11 @@ export function Delay(timeInMs: number) {
 				expectedKind: "method"
 			})
 		}
+
+		metadataWalker.updateEventMeta({
+			methodName: context.name,
+			allowConcurrency: true
+		})
 
 		return function (this: T, ...args: A): Promise<R> {
 			return new Promise<R>((resolve, reject) => {

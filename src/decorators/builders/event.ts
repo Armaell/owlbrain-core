@@ -31,6 +31,9 @@ export interface BuilderFnReturn<EVENT extends OwlEvent, RETURN = void> {
  */
 export interface EventDecoratorMeta<EVENT extends OwlEvent> {
 	methodName: string | symbol
+	/** If **true**, this event handler can be ran event when another one in the script is being run,\
+	 * otherwise, it will only be called if no other event handler in the script is already running */
+	allowConcurrency?: boolean
 	build: (
 		methodImpl: (event: EVENT) => any,
 		scriptData: unknown

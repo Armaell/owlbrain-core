@@ -32,10 +32,30 @@ export class MetadataWalker {
 
 	/**
 	 * Records metadata for an event-decorated method.
-	 * Called by method decorators during class definition.
+	 * Called by event handler method decorators during class definition.
 	 */
 	addEventMeta(data: EventDecoratorMeta<any>) {
 		this.eventMetaStack.push(data)
+	}
+
+	/**
+	 * Merge update the metadata for an event-decorated method.
+	 * Called by method decorators during class definition.
+	 */
+	updateEventMeta(
+		data: Partial<EventDecoratorMeta<any>> &
+			Pick<EventDecoratorMeta<any>, "methodName">
+	) {
+		const idx = this.eventMetaStack.findIndex(
+			(m) => m.methodName === data.methodName
+		)
+
+		if (idx === -1) return
+
+		this.eventMetaStack[idx] = {
+			...this.eventMetaStack[idx],
+			...data
+		}
 	}
 
 	/**

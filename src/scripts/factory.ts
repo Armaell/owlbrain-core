@@ -168,29 +168,35 @@ export class ScriptFactory {
 		eventMetas: EventDecoratorMeta<any>[]
 	): Promise<BuildingEventHandler<SCC>[]> {
 		return Promise.all(
-			instances.flatMap(({ key, instance, scriptMeta, scriptData }) =>
-				eventMetas.map((eventMeta) =>
-					this.buildEventHandler(
-						ScriptClass,
-						key,
-						instance,
-						scriptMeta,
-						scriptData,
-						eventMeta
+			instances.flatMap(
+				({ key: instanceKey, instance, scriptMeta, scriptData }) =>
+					eventMetas.map((eventMeta) =>
+						this.buildEventHandler(
+							ScriptClass,
+							instanceKey,
+							instance,
+							scriptMeta,
+							scriptData,
+							eventMeta
+						)
 					)
-				)
 			)
 		)
 	}
 
 	private async buildEventHandler(
 		ScriptClass: ScriptClassConstructor,
-		key: symbol,
+		instanceKey: symbol,
 		instance: any,
 		scriptMeta: ScriptDecoratorMeta<any, any>,
-		scriptData: any,
+		scriptData: ScriptData,
 		eventMeta: EventDecoratorMeta<any>
 	) {
+		const key =
+			scriptData.allowConcurrency || eventMeta.allowConcurrency
+				? Symbol(String(instanceKey))
+				: instanceKey
+
 		const methodImpl = instance[eventMeta.methodName].bind(instance)
 		const consumerData = await eventMeta.build(methodImpl, scriptData)
 		return { ScriptClass, key, methodImpl, consumerData }
