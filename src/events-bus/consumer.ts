@@ -82,6 +82,7 @@ export class EventBusConsumer {
 	}
 
 	private async executeTask({ consumer, event }: EventTask) {
+		let matched = false
 		try {
 			if (
 				this.lifecycle.state === LifecycleState.Stopping &&
@@ -94,11 +95,12 @@ export class EventBusConsumer {
 			const filterMatch = !consumer.eventFilter || consumer.eventFilter(event)
 			if (!filterMatch) return
 
+			matched = true
 			await consumer.method(event)
 		} catch (err) {
 			this.logger.error(err)
 		} finally {
-			if (consumer.once) this.registry.unregister(consumer)
+			if (matched && consumer.once) this.registry.unregister(consumer)
 		}
 	}
 }

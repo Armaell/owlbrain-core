@@ -1,8 +1,12 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
+import { randomUUID } from "node:crypto"
+import { container } from "../di/container"
+import type { EventBusFacade } from "../events-bus/facade"
 import { InvalidDecoratorPlacementError } from "../errors"
 
+const namespace = "core.delay"
+
 /**
- * Delay function call by {@link timeInMs}
+ * Delay function call by {@link timeInMs}.
  */
 export function Delay(timeInMs: number) {
 	return function <T, A extends any[], R>(
@@ -20,18 +24,35 @@ export function Delay(timeInMs: number) {
 
 		return function (this: T, ...args: A): Promise<R> {
 			return new Promise<R>((resolve, reject) => {
-				const timer = setTimeout(async () => {
-					try {
-						resolve(await value.call(this, ...args))
-					} catch (err) {
-						reject(err)
-					}
-				}, timeInMs)
+				void (async () => {
+					const eventBus = await container.resolveAsync<EventBusFacade>([
+						"core",
+						"eventbus"
+					])
+					const eventName = randomUUID()
 
-				// Prevent timer from keeping Node alive
-				if (typeof timer.unref === "function") {
-					timer.unref()
-				}
+					eventBus.listen({
+						namespace,
+						eventName,
+						once: true,
+						method: async () => {
+							try {
+								resolve(await value.call(this, ...args))
+							} catch (err) {
+								reject(err)
+							}
+						}
+					})
+
+					const timer = setTimeout(() => {
+						void eventBus.emit({ namespace, name: eventName })
+					}, timeInMs)
+
+					// Prevent timer from keeping Node alive
+					if (typeof timer.unref === "function") {
+						timer.unref()
+					}
+				})()
 			})
 		}
 	}
