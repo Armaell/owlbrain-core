@@ -43,7 +43,7 @@ function printHelp() {
 	const groupNames = Object.keys(groups)
 
 	for (const group of groupNames) {
-		console.log(`${group.toLocaleUpperCase()}`)
+		console.log(`${group.toUpperCase()}`)
 
 		const items = groups[group]
 		const lastItem = items[items.length - 1]

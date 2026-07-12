@@ -93,11 +93,11 @@ describe("LifecycleMachine", () => {
 			expect(events).toEqual([
 				{
 					namespace: "core.lifecycle",
-					name: LifecycleState.Starting.toLocaleLowerCase()
+					name: LifecycleState.Starting.toLowerCase()
 				},
 				{
 					namespace: "core.lifecycle",
-					name: LifecycleState.Started.toLocaleLowerCase()
+					name: LifecycleState.Started.toLowerCase()
 				}
 			])
 		})

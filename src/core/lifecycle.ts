@@ -80,7 +80,7 @@ export class LifecycleMachine {
 			this.currentState = next
 			await this.eventBus.emit({
 				namespace: "core.lifecycle",
-				name: next.toLocaleLowerCase()
+				name: next.toLowerCase()
 			})
 
 			const hookName = ("on" + next) as keyof LifecycleHooks

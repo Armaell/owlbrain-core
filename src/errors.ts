@@ -87,7 +87,7 @@ export class TokenAlreadyExistError extends OwlError {
 	constructor(args: { namespace?: string[]; token: string }) {
 		super({
 			namespace: args.namespace,
-			message: `Container token ${args.token} not found`
+			message: `Container token ${args.token} already exists`
 		})
 		this.token = args.token
 	}
