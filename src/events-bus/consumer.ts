@@ -17,8 +17,14 @@ export type EventsConsumer<TEvent extends OwlEvent = OwlEvent> = {
 	concurrencyKey?: symbol
 }
 
+type InternalEventsConsumer<TEvent extends OwlEvent = OwlEvent> =
+	EventsConsumer<TEvent> & {
+		/** Set once a `once` consumer has been claimed, to prevent double-firing. */
+		consumed?: boolean
+	}
+
 export type EventTask<TEvent extends OwlEvent = OwlEvent> = {
-	consumer: EventsConsumer<TEvent>
+	consumer: InternalEventsConsumer<TEvent>
 	event: TEvent
 }
 
@@ -82,7 +88,6 @@ export class EventBusConsumer {
 	}
 
 	private async executeTask({ consumer, event }: EventTask) {
-		let matched = false
 		try {
 			if (
 				this.lifecycle.state === LifecycleState.Stopping &&
@@ -95,12 +100,15 @@ export class EventBusConsumer {
 			const filterMatch = !consumer.eventFilter || consumer.eventFilter(event)
 			if (!filterMatch) return
 
-			matched = true
+			if (consumer.once) {
+				if (consumer.consumed) return
+				consumer.consumed = true
+				this.registry.unregister(consumer)
+			}
+
 			await consumer.method(event)
 		} catch (err) {
 			this.logger.error(err)
-		} finally {
-			if (matched && consumer.once) this.registry.unregister(consumer)
 		}
 	}
 }

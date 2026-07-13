@@ -180,6 +180,28 @@ describe("Event-bus system", () => {
 		expect(received).toEqual(["first"])
 	})
 
+	it("fires a `once` consumer only once when matching events race under concurrency", async () => {
+		const received: string[] = []
+
+		consumer = new EventBusConsumer(eventBus, lifecycle as any, 2)
+
+		consumer.register({
+			once: true,
+			method: async (event) => {
+				await sleep(40)
+				received.push(event.name)
+			}
+		})
+
+		// Two matching events dispatched back-to-back, before the first handler completes
+		await eventBus.emit({ name: "first" })
+		await eventBus.emit({ name: "second" })
+
+		await sleep(120)
+
+		expect(received).toEqual(["first"])
+	})
+
 	it("serializes tasks sharing the same concurrencyKey", async () => {
 		const key = Symbol("serial")
 		const executionOrder: string[] = []
