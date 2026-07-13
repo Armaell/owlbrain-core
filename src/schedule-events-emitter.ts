@@ -11,6 +11,16 @@ interface LaterTimer {
 }
 
 /**
+ * Snap a `Date` to the nearest whole second.
+ *
+ * `later.setInterval` invokes its callback at (approximately) the scheduled second, a few milliseconds early or late.
+ * Rounding to the nearest second clear that sub-second jitter.
+ */
+function snapToSecond(date: Date): Date {
+	return new Date(Math.round(date.getTime() / 1000) * 1000)
+}
+
+/**
  * Centralize cron-"jobs" events.
  * @Schedule event decorators request the schedules of events they need to be emitted
  */
@@ -43,10 +53,11 @@ export class ScheduleEventsEmitter implements LifecycleHooks {
 	}
 
 	private async emit() {
-		const date = new Date()
+		const scheduledFor = snapToSecond(new Date())
 		await this.eventBus.emit({
 			namespace: "core.schedule",
-			name: date.toString()
+			name: scheduledFor.toISOString(),
+			datetime: scheduledFor
 		})
 	}
 

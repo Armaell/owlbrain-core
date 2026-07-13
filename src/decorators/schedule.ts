@@ -60,8 +60,7 @@ export const Schedule = {
 			return {
 				method,
 				eventNamespace: "core.schedule",
-				eventFilter: (event: OwlEvent) =>
-					laterSchedule.isValid(new Date(event.name))
+				eventFilter: (event: OwlEvent) => laterSchedule.isValid(event.datetime)
 			}
 		}
 	),
@@ -109,8 +108,7 @@ export const Schedule = {
 			return {
 				method,
 				eventNamespace: "core.schedule",
-				eventFilter: (event: OwlEvent) =>
-					laterSchedule.isValid(new Date(event.name))
+				eventFilter: (event: OwlEvent) => laterSchedule.isValid(event.datetime)
 			}
 		}
 	)
