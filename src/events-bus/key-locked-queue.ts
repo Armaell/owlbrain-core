@@ -17,10 +17,13 @@ export interface KeyLockedEntry<T> {
 export class KeyLockedQueue<T> {
 	private list = new DoublyLinkedList<KeyLockedEntry<T>>()
 	private lockedKeys = new Set<string | symbol>()
-	private lockedItems = new Map<string | symbol, WeakSet<object>>()
+
+	private queuedCountByKey = new Map<string | symbol, number>()
 
 	enqueue(item: T, key?: string | symbol): void {
 		this.list.insertLast({ item, key })
+
+		if (key !== undefined) this.incrementKeyCount(key)
 	}
 
 	next(): KeyLockedEntry<T> | undefined {
@@ -40,22 +43,11 @@ export class KeyLockedQueue<T> {
 			if (!this.lockedKeys.has(key)) {
 				this.lockedKeys.add(key)
 				this.list.remove(item)
-				this.lockedItems.delete(key)
+				this.decrementKeyCount(key)
 				return entry
 			}
 
-			// Key locked → mark item as locked
-			{
-				let keyLockedItems = this.lockedItems.get(key)
-				if (!keyLockedItems) {
-					keyLockedItems = new WeakSet()
-					this.lockedItems.set(key, keyLockedItems)
-				}
-				if (!keyLockedItems.has(item)) {
-					keyLockedItems.add(item)
-				}
-			}
-
+			// Key locked → skip and keep scanning
 			item = item.getNext()
 		}
 
@@ -63,27 +55,24 @@ export class KeyLockedQueue<T> {
 	}
 
 	/**
-	 * @returns Number of released entries
+	 * Unlock a key.
+	 * @returns Number of items still queued under that key (now consumable)
 	 */
 	release(key?: string | symbol): number {
 		if (key === undefined) return 0
 
 		this.lockedKeys.delete(key)
 
-		const count = this.weakSetSize(this.lockedItems.get(key))
-		this.lockedItems.delete(key)
-
-		return count
+		return this.queuedCountByKey.get(key) ?? 0
 	}
 
 	releaseAll(): number {
 		let total = 0
 
 		for (const key of this.lockedKeys)
-			total += this.weakSetSize(this.lockedItems.get(key))
+			total += this.queuedCountByKey.get(key) ?? 0
 
 		this.lockedKeys.clear()
-		this.lockedItems.clear()
 
 		return total
 	}
@@ -92,16 +81,15 @@ export class KeyLockedQueue<T> {
 		return this.list.isEmpty()
 	}
 
-	private weakSetSize(set: WeakSet<object> | undefined): number {
-		if (!set) return 0
+	private incrementKeyCount(key: string | symbol): void {
+		this.queuedCountByKey.set(key, (this.queuedCountByKey.get(key) ?? 0) + 1)
+	}
 
-		let count = 0
-		let node = this.list.head()
-		while (node) {
-			if (set.has(node)) count++
-			node = node.getNext()
-		}
+	private decrementKeyCount(key: string | symbol): void {
+		const count = this.queuedCountByKey.get(key)
+		if (count === undefined) return
 
-		return count
+		if (count <= 1) this.queuedCountByKey.delete(key)
+		else this.queuedCountByKey.set(key, count - 1)
 	}
 }

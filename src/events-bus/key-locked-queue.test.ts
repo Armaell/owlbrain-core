@@ -30,7 +30,7 @@ describe("KeyLockedQueue", () => {
 
 		// Release A
 		const releasedCount1 = q.release("A")
-		expect(releasedCount1).toBe(1) // A2 released
+		expect(releasedCount1).toBe(2) // A2 and A3 released
 
 		// returns A2
 		const fourth = q.next()
@@ -39,7 +39,7 @@ describe("KeyLockedQueue", () => {
 
 		// Release B
 		const releasedCount2 = q.release("B")
-		expect(releasedCount2).toBe(0)
+		expect(releasedCount2).toBe(1) // B2 released
 
 		// returns B2
 		const fifth = q.next()
@@ -48,7 +48,7 @@ describe("KeyLockedQueue", () => {
 
 		// Release C
 		const releasedCount3 = q.release("C")
-		expect(releasedCount3).toBe(0)
+		expect(releasedCount3).toBe(1) // C2 released
 
 		// returns C2
 		const sixth = q.next()
@@ -108,7 +108,7 @@ describe("KeyLockedQueue", () => {
 		expect(second?.item).toBe("B1")
 
 		const releasedCount1 = q.release("A")
-		expect(releasedCount1).toBe(2) // A2 and A3 released
+		expect(releasedCount1).toBe(4) // A2, A3, A4 and A5 released
 
 		const third = q.next() // returns A2, locks A
 		expect(third?.item).toBe("A2")
