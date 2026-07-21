@@ -46,6 +46,7 @@ export const Schedule = {
 			const parsed = later.parse.text(textSchedule)
 			if (parsed.error >= 0) {
 				throw new InvalidScheduleError({
+					namespace: ["core", "schedule"],
 					type: "text",
 					text: textSchedule
 				})
@@ -94,6 +95,7 @@ export const Schedule = {
 			const parsed = later.parse.cron(cronSchedule, true)
 			if (parsed.error >= 0) {
 				throw new InvalidScheduleError({
+					namespace: ["core", "schedule"],
 					type: "cron",
 					text: cronSchedule
 				})

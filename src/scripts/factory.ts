@@ -44,6 +44,10 @@ type BuildingEventHandler<SCC extends ScriptClassConstructor> = {
 	key: BuildingScript<SCC>["key"]
 	methodImpl: any
 	/**
+	 * Name of the decorated method, used to attribute handler errors
+	 */
+	methodName: string | symbol
+	/**
 	 * Data used by the {@link EventBusConsumer}
 	 */
 	consumerData: BuilderFnReturn<any, any>
@@ -112,6 +116,7 @@ export class ScriptFactory {
 					.instances.push(...instances.map((i) => i.instance))
 			} catch (err) {
 				throw new ScriptInstantiationError({
+					namespace: this.logger.namespace,
 					name: ScriptClass.name,
 					cause: err
 				})
@@ -193,7 +198,13 @@ export class ScriptFactory {
 	) {
 		const methodImpl = instance[eventMeta.methodName].bind(instance)
 		const consumerData = await eventMeta.build(methodImpl, scriptData)
-		return { ScriptClass, key, methodImpl, consumerData }
+		return {
+			ScriptClass,
+			key,
+			methodImpl,
+			methodName: eventMeta.methodName,
+			consumerData
+		}
 	}
 
 	/**
@@ -207,7 +218,9 @@ export class ScriptFactory {
 				method: h.consumerData.method,
 				eventFilter: h.consumerData.eventFilter,
 				eventName: h.consumerData.eventName,
-				concurrencyKey: h.key
+				concurrencyKey: h.key,
+				scriptName: h.ScriptClass.name,
+				methodName: h.methodName
 			})
 		}
 	}
@@ -227,6 +240,7 @@ export class ScriptFactory {
 				}
 			} catch (err) {
 				throw new ScriptInstantiationError({
+					namespace: this.logger.namespace,
 					name: ScriptClass.name,
 					cause: err
 				})
@@ -264,6 +278,7 @@ export class ScriptFactory {
 					}
 				} catch (err) {
 					throw new ScriptInstantiationError({
+						namespace: this.logger.namespace,
 						name: ScriptClass.name,
 						cause: err
 					})

@@ -1,5 +1,6 @@
 import type { LifecycleMachine } from "../core/lifecycle"
 import { LifecycleState } from "../core/lifecycle"
+import { EventHandlerError } from "../errors"
 import { Logger } from "../logging/logger"
 import { ConsumerRegistry } from "./consumer-registry"
 import type { EventBus, OwlEvent } from "./events-bus"
@@ -15,6 +16,10 @@ export type EventsConsumer<TEvent extends OwlEvent = OwlEvent> = {
 	eventName?: string
 	once?: boolean
 	concurrencyKey?: symbol
+	/** Name of the owning script class, used to attribute handler errors */
+	scriptName?: string
+	/** Name of the decorated method, used to attribute handler errors */
+	methodName?: string | symbol
 }
 
 type InternalEventsConsumer<TEvent extends OwlEvent = OwlEvent> =
@@ -108,7 +113,22 @@ export class EventBusConsumer {
 
 			await consumer.method(event)
 		} catch (err) {
-			this.logger.error(err)
+			const scriptName =
+				consumer.scriptName ?? consumer.concurrencyKey?.description
+			const methodName =
+				consumer.methodName !== undefined
+					? String(consumer.methodName)
+					: undefined
+			this.logger.error(
+				new EventHandlerError({
+					namespace: [scriptName, methodName].filter((s): s is string => !!s),
+					scriptName,
+					methodName,
+					eventName: event.name,
+					eventNamespace: event.namespace,
+					cause: err
+				})
+			)
 		}
 	}
 }

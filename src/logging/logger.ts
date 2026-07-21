@@ -3,6 +3,7 @@ import { bgRed, bold, cyan, dim, green, red, white, yellow } from "colorette"
 import type { LogLevel } from "./log-levels-registry"
 import { LogLevelRegistry } from "./log-levels-registry"
 import { RingBuffer } from "../utils"
+import { OwlError } from "../errors"
 
 export type Log = {
 	date: Date
@@ -48,7 +49,14 @@ export class Logger {
 
 	private formatUnknown(value: unknown): string {
 		if (value instanceof Error) {
-			return value.stack ?? value.message
+			const origin =
+				value instanceof OwlError && value.namespace?.length
+					? `[${value.namespace.join(".")}] `
+					: ""
+			const base = origin + (value.stack ?? value.message)
+			return value.cause !== undefined
+				? `${base}\n  caused by: ${this.formatUnknown(value.cause)}`
+				: base
 		}
 		if (typeof value === "string") {
 			return value

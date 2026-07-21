@@ -1,4 +1,5 @@
 import { type InjectionToken, container } from "../di/container"
+import { InvalidDecoratorPlacementError } from "../errors"
 
 /**
  * Inject an object from the {@link container}
@@ -11,7 +12,12 @@ import { type InjectionToken, container } from "../di/container"
 export function Inject(token: InjectionToken) {
 	return function (value: undefined, context: ClassFieldDecoratorContext) {
 		if (context.kind !== "field") {
-			throw new Error("@Inject can only be used on class fields")
+			throw new InvalidDecoratorPlacementError({
+				decoratorName: "Inject",
+				decoratedName: context.name,
+				actualKind: context.kind,
+				expectedKind: "field"
+			})
 		}
 
 		context.addInitializer(function () {

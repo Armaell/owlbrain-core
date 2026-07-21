@@ -1,6 +1,7 @@
 import type { LifecycleHooks } from "./lifecycle"
 import { LifecycleMachine, LifecycleState } from "./lifecycle"
 import type { EventBus } from "../events-bus/events-bus"
+import { InvalidLifecycleTransitionError } from "../errors"
 import { beforeEach, describe, expect, test } from "vitest"
 
 describe("LifecycleMachine", () => {
@@ -77,8 +78,11 @@ describe("LifecycleMachine", () => {
 		test("invalid transitions throw an error", async () => {
 			const machine = new LifecycleMachine(eventBus)
 
+			await expect(
+				machine.transition(LifecycleState.Started)
+			).rejects.toBeInstanceOf(InvalidLifecycleTransitionError)
 			await expect(machine.transition(LifecycleState.Started)).rejects.toThrow(
-				"Invalid transition: Init → Started"
+				"Invalid lifecycle transition from Init to Started"
 			)
 		})
 	})

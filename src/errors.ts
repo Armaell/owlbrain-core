@@ -52,6 +52,23 @@ export class IncorrectStateError extends OwlError {
 	}
 }
 
+export class InvalidLifecycleTransitionError extends OwlError {
+	public readonly from: LifecycleState
+	public readonly to: LifecycleState
+	constructor(args: {
+		namespace?: string[]
+		from: LifecycleState
+		to: LifecycleState
+	}) {
+		super({
+			namespace: args.namespace,
+			message: `Invalid lifecycle transition from ${args.from} to ${args.to}`
+		})
+		this.from = args.from
+		this.to = args.to
+	}
+}
+
 export class LifecycleTransitionError extends OwlError {
 	public readonly from: LifecycleState
 	public readonly to: LifecycleState
@@ -157,9 +174,40 @@ export class InvalidDecoratorPlacementError extends OwlError {
 	}
 }
 
-export class InvalidScheduleError extends OwlError {
-	constructor(args: { text: string; type: "text" | "cron"; cause?: unknown }) {
+export class EventHandlerError extends OwlError {
+	public readonly scriptName?: string
+	public readonly methodName?: string
+	public readonly eventName: string
+	public readonly eventNamespace?: string
+	constructor(args: {
+		namespace?: string[]
+		scriptName?: string
+		methodName?: string
+		eventName: string
+		eventNamespace?: string
+		cause: unknown
+	}) {
 		super({
+			namespace: args.namespace,
+			message: `Script "${args.scriptName ?? "?"}" handler "${args.methodName ?? "?"}" threw while handling event "${args.eventName}"${args.eventNamespace ? ` (event namespace: ${args.eventNamespace})` : ""}`,
+			cause: args.cause
+		})
+		this.scriptName = args.scriptName
+		this.methodName = args.methodName
+		this.eventName = args.eventName
+		this.eventNamespace = args.eventNamespace
+	}
+}
+
+export class InvalidScheduleError extends OwlError {
+	constructor(args: {
+		namespace?: string[]
+		text: string
+		type: "text" | "cron"
+		cause?: unknown
+	}) {
+		super({
+			namespace: args.namespace,
 			message: `The given ${args.type} schedule "${args.text}" is not a valid schedule. Please check later.js documentation at https://breejs.github.io/later/parsers.html#${args.type}`,
 			cause: args.cause
 		})

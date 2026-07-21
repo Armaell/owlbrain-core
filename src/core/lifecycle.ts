@@ -1,5 +1,9 @@
 import type { EventBus } from "../events-bus/events-bus"
-import { IncorrectStateError, LifecycleTransitionError } from "../errors"
+import {
+	IncorrectStateError,
+	InvalidLifecycleTransitionError,
+	LifecycleTransitionError
+} from "../errors"
 import { Logger } from "../logging/logger"
 
 export enum LifecycleState {
@@ -72,7 +76,11 @@ export class LifecycleMachine {
 	async transition(next: LifecycleState) {
 		const allowed = this.transitions[this.state] ?? []
 		if (!allowed.includes(next)) {
-			throw new Error(`Invalid transition: ${this.state} → ${next}`)
+			throw new InvalidLifecycleTransitionError({
+				namespace: this.logger.namespace,
+				from: this.state,
+				to: next
+			})
 		}
 
 		const fromState = this.currentState
