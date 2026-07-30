@@ -32,7 +32,7 @@ export interface OwlBrainConfig {
 	 * Directory or glob pattern pointing to script files.\
 	 * classes decorated by `@Script()` are imported, registered, and instantiated on file import.
 	 */
-	scriptsPath?: string
+	scriptsPath?: string | string[]
 
 	/**
 	 * Set per namespace the logging levels
@@ -76,7 +76,8 @@ class OwlBrainBuilder {
 			this.withIntegrations(...configuration.integrations)
 		if (configuration.logLevels) this.withLoggerLevels(configuration.logLevels)
 		if (configuration.scriptsPath)
-			this.withScriptsPath(configuration.scriptsPath)
+			for (const path of ([] as string[]).concat(configuration.scriptsPath))
+				this.withScriptsPath(path)
 		if (configuration.workers) this.withWorkersCount(configuration.workers)
 	}
 
@@ -150,10 +151,14 @@ class OwlBrainBuilder {
 
 	/**
 	 * Directory or glob pattern pointing to script files.\
-	 * classes decorated by `@Script()` are imported, registered, and instantiated on file import.
+	 * classes decorated by `@Script()` are imported, registered, and instantiated on file import.\
+	 * Can be called multiple times; each path is imported in addition to the previous ones.
 	 */
 	withScriptsPath(path: string) {
-		OwlBrainBuilder.config.scriptsPath = path
+		OwlBrainBuilder.config.scriptsPath = ([] as string[]).concat(
+			OwlBrainBuilder.config.scriptsPath ?? [],
+			path
+		)
 		return this
 	}
 
@@ -215,8 +220,10 @@ class OwlBrainBuilder {
 			await core.registerIntegration(integration)
 		}
 
-		if (OwlBrainBuilder.config.scriptsPath)
-			await scriptRegistry.importScriptFiles(OwlBrainBuilder.config.scriptsPath)
+		for (const path of ([] as string[]).concat(
+			OwlBrainBuilder.config.scriptsPath ?? []
+		))
+			await scriptRegistry.importScriptFiles(path)
 
 		await scriptRegistry.instantiateMissingScripts()
 
